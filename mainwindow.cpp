@@ -30,7 +30,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(timerDelete, SIGNAL(timeout()), this, SLOT(DeleteUser()));
     connect(timerAlive, SIGNAL(timeout()), this, SLOT(sendAlive()));
 
-    udpSocket->bind(14000, QUdpSocket::ShareAddress);
+    udpSocket->bind(BCAST_TEXT_PORT, QUdpSocket::ShareAddress);
     messageNo = 1;
 
 #ifdef WIN32
@@ -65,7 +65,7 @@ void MainWindow::sendAlive()
     QByteArray datagram = "EVMp_ALIVE_"+QByteArray::number(nick.size(),10);
     datagram.append("_" +nick);
     udpSocket->writeDatagram(datagram.data(), datagram.size(),
-                             QHostAddress("172.27.24.255"), 14000);
+                             QHostAddress(BCAST_ADDRESS), BCAST_TEXT_PORT);
 }
 
 void MainWindow::broadcastDatagram()
@@ -76,7 +76,7 @@ void MainWindow::broadcastDatagram()
     //datagram.append(ui->lineEdit->text().size());
     datagram.append("_"+ui->lineEdit->text());
     udpSocket->writeDatagram(datagram.data(), datagram.size(),
-                             QHostAddress("172.27.24.255"), 14000);
+                             QHostAddress(BCAST_ADDRESS), BCAST_TEXT_PORT);
     nick = ui->lineEdit_2->text();
     ui->label_3->setText(nick);
     ui->lineEdit_2->clear();
@@ -96,7 +96,7 @@ void MainWindow::processPendingDatagrams()
         QByteArray processText = processIncomingText(datagram, sender); //Обработка входящего сообщения
 
         if(processText==""){
-        }else if(processText.contains("msg")){
+        } else if(processText.contains("msg")){
             datagram = datagram.mid(13,datagram.size()-1);
             qDebug()<<datagram;
             ui->listWidget_2->addItem(processText.mid(3));
@@ -112,7 +112,7 @@ void MainWindow::processPendingDatagrams()
                 }
             }
 
-        }else{
+        } else {
             if (localIP(sender))
             {
                 qHash.insert(sender,QTime::currentTime());
@@ -189,7 +189,7 @@ void MainWindow::on_sendButton_clicked()
     ui->listWidget_2->addItem(nick+":"+ui->lineEdit->text());
     ui->lineEdit->clear();
     udpSocket->writeDatagram(datagram.data(), datagram.size(),
-                             QHostAddress("172.27.24.255"), 14000);
+                             QHostAddress(BCAST_ADDRESS), BCAST_TEXT_PORT);
 }
 QByteArray MainWindow ::processIncomingText(QByteArray datagram, QHostAddress sender)
 {
@@ -213,6 +213,7 @@ QByteArray MainWindow ::processIncomingText(QByteArray datagram, QHostAddress se
     return "";
 
 }
+
 using namespace jrtplib;
 
 void checkRet(bool ret,const MIPErrorBase &obj)
@@ -259,26 +260,21 @@ void MainWindow::on_sendButton_windowIconChanged(QIcon const&)
 
 void MainWindow::on_CallButton_clicked()
 {
-/*#ifdef WIN32
-    WSADATA dat;
-    WSAStartup(MAKEWORD(2,2),&dat);
-#endif // WIN32
-*/
 #ifdef MIPCONFIG_SUPPORT_PORTAUDIO
     std::string errStr;
 
     if (!MIPPAInputOutput::initializePortAudio(errStr))
     {
         std::cerr << "Can't initialize PortAudio: " << errStr << std::endl;
-        // return -1;
+        exit(-1);
     }
 #endif // MIPCONFIG_SUPPORT_PORTAUDIO
 
-   // MIPAudioSessionParams Aparams;
-    //MIPAudioSession audioSess;
     bool ret;
 
-    int audioPort = 14002;
+    int audioPort = BCAST_SND_PORT;
+
+    // An object defining properties of the following audio session.
 
     Aparams.setPortbase(audioPort);
 //Aparams.setCompressionType(MIPAudioSessionParams::Speex);
@@ -318,7 +314,4 @@ void MainWindow::on_CallButton_clicked()
 //#ifdef MIPCONFIG_SUPPORT_PORTAUDIO
     //MIPPAInputOutput::terminatePortAudio();
 //#endif // MIPCONFIG_SUPPORT_PORTAUDIO
-//#ifdef WIN32
-    //WSACleanup();
-//#endif // WIN32
 }

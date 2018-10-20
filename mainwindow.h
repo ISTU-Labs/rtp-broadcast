@@ -8,6 +8,10 @@
 #include <QUdpSocket>
 #include <QList>
 
+#define BCAST_ADDRESS "172.27.24.255"
+#define BCAST_TEXT_PORT 14000
+#define BCAST_SND_PORT 14002
+
 namespace Ui {
 class MainWindow;
 }
